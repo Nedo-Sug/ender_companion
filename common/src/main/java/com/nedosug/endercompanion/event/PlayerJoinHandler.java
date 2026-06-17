@@ -19,7 +19,7 @@ public final class PlayerJoinHandler {
     }
 
     public static void onPlayerJoin(ServerPlayer player) {
-        if (player.getPersistentData().getBoolean(NBT_KEY_SPAWNED_COMPANION)) {
+        if (player.getTags().contains(NBT_KEY_SPAWNED_COMPANION)) {
             return;
         }
 
@@ -42,7 +42,7 @@ public final class PlayerJoinHandler {
         companion.setOwnerUUID(player.getUUID());
 
         if (level.addFreshEntity(companion)) {
-            player.getPersistentData().putBoolean(NBT_KEY_SPAWNED_COMPANION, true);
+            player.addTag(NBT_KEY_SPAWNED_COMPANION);
             EnderCompanionMod.LOGGER.info("Spawned Ender Companion for player {} at {}",
                     player.getName().getString(), spawnPos);
         } else {

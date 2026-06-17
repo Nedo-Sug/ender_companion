@@ -3,6 +3,7 @@ package com.nedosug.endercompanion.networking;
 import com.nedosug.endercompanion.EnderCompanionMod;
 import dev.architectury.networking.NetworkManager;
 import dev.architectury.platform.Platform;
+import dev.architectury.utils.Env;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
@@ -28,7 +29,7 @@ public final class ModNetworking {
     }
 
     private static void handleConfigSync(FriendlyByteBuf buf, NetworkManager.PacketContext context) {
-        if (Platform.getEnvironment().isClient()) {
+        if (Platform.getEnvironment() == Env.CLIENT) {
             boolean enabled = buf.readBoolean();
             double radius = buf.readDouble();
             EnderCompanionMod.LOGGER.debug("Received config sync: enabled={}, radius={}", enabled, radius);

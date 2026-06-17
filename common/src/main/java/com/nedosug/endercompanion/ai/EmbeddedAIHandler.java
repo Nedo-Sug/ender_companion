@@ -3,6 +3,7 @@ package com.nedosug.endercompanion.ai;
 import com.nedosug.endercompanion.EnderCompanionMod;
 import de.kherud.llama.InferenceParameters;
 import de.kherud.llama.LlamaModel;
+import de.kherud.llama.LlamaOutput;
 import de.kherud.llama.ModelParameters;
 
 import javax.annotation.Nullable;
@@ -196,7 +197,7 @@ public final class EmbeddedAIHandler {
 
             // Generate response (blocking call, but we're in a separate thread)
             StringBuilder response = new StringBuilder();
-            for (LlamaModel.Output output : model.generate(inferParams)) {
+            for (LlamaOutput output : model.generate(inferParams)) {
                 response.append(output.text);
             }
 

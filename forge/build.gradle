@@ -27,7 +27,7 @@ loom {
     runs {
         data {
             data()
-            programArgs "--all", "--mod", rootProject.mod_id
+            programArgs "--all", "--mod", project.rootProject.mod_id
             programArgs "--output", generatedResources.absolutePath
         }
     }
