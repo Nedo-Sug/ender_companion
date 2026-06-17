@@ -15,7 +15,7 @@ public final class ModEntities {
     public static final RegistrySupplier<EntityType<EnderCompanionEntity>> ENDER_COMPANION =
             ENTITIES.register("ender_companion", () -> EntityType.Builder
                     .of(EnderCompanionEntity::new, MobCategory.CREATURE)
-                    .sized(0.6F, 1.95F)
+                    .sized(0.6F, 2.7F)
                     .clientTrackingRange(10)
                     .build("ender_companion"));
 
