@@ -1,0 +1,20 @@
+{
+  "entity.endercompanion.ender_companion": "Ender Companion",
+  "item.endercompanion.ender_companion_spawn_egg": "Ender Companion Spawn Egg",
+
+  "chat.endercompanion.ai.downloading": "*Companion looks distracted, staring at something distant...*",
+  "chat.endercompanion.ai.initializing": "*Companion blinks slowly, still waking up...*",
+  "chat.endercompanion.ai.error_confused": "*Companion looks at you with confused purple eyes...*",
+  "chat.endercompanion.ai.error_words": "*Companion stutters nervously and can't find words...*",
+  "chat.endercompanion.ai.empty_response": "*Companion nods quietly*",
+  "chat.endercompanion.ai.distracted": "*Companion seems distracted...*",
+
+  "chat.endercompanion.backpack.incompatible": "§cCannot open backpack - Traveler's Backpack version incompatible",
+  "chat.endercompanion.backpack.method_not_found": "§cCannot open backpack - method not found",
+  "chat.endercompanion.backpack.error": "§cError opening backpack inventory",
+
+  "endercompanion.config.title": "Ender Companion Settings",
+  "endercompanion.config.category.general": "General",
+  "endercompanion.config.enable_companion": "Enable Companion",
+  "endercompanion.config.follow_radius": "Follow Radius"
+}

@@ -1,0 +1,20 @@
+{
+  "entity.endercompanion.ender_companion": "Спутница-Эндермен",
+  "item.endercompanion.ender_companion_spawn_egg": "Яйцо призыва Спутницы-Эндермен",
+
+  "chat.endercompanion.ai.downloading": "*Спутница смотрит рассеянно, глядя куда-то вдаль...*",
+  "chat.endercompanion.ai.initializing": "*Спутница медленно моргает, все еще просыпаясь...*",
+  "chat.endercompanion.ai.error_confused": "*Спутница смотрит на вас растерянными фиолетовыми глазами...*",
+  "chat.endercompanion.ai.error_words": "*Спутница заикается нервно и не может подобрать слова...*",
+  "chat.endercompanion.ai.empty_response": "*Спутница тихо кивает*",
+  "chat.endercompanion.ai.distracted": "*Спутница кажется рассеянной...*",
+
+  "chat.endercompanion.backpack.incompatible": "§cНе удается открыть рюкзак - несовместимая версия Traveler's Backpack",
+  "chat.endercompanion.backpack.method_not_found": "§cНе удается открыть рюкзак - метод не найден",
+  "chat.endercompanion.backpack.error": "§cОшибка открытия инвентаря рюкзака",
+
+  "endercompanion.config.title": "Настройки Спутницы-Эндермен",
+  "endercompanion.config.category.general": "Общие",
+  "endercompanion.config.enable_companion": "Включить спутницу",
+  "endercompanion.config.follow_radius": "Радиус следования"
+}

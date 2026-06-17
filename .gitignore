@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+out/
+run/
+logs/
+
+# Loom
+.remapped/
+*.launch
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Minecraft
+crash-reports/
+debug.log
+latest.log

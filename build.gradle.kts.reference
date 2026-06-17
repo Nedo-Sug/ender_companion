@@ -1,0 +1,60 @@
+// Kotlin DSL equivalent of the root build.gradle (reference).
+// Rename to build.gradle.kts and remove build.gradle to switch.
+
+plugins {
+    id("architectury-plugin") version "3.4-SNAPSHOT"
+    id("dev.architectury.loom") version "1.7-SNAPSHOT" apply false
+}
+
+architectury {
+    minecraft.set(rootProject.property("minecraft_version") as String)
+}
+
+subprojects {
+    apply(plugin = "dev.architectury.loom")
+
+    repositories {
+        maven(url = "https://maven.architectury.dev/")
+        maven(url = "https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/") {
+            name = "GeckoLib"
+            content {
+                includeGroupByRegex("software\\.bernie.*")
+                includeGroup("com.eliotlash.mclib")
+            }
+        }
+        maven(url = "https://maven.shedaniel.me/") {
+            name = "ClothConfig"
+            content {
+                includeGroup("me.shedaniel.cloth")
+                includeGroup("me.shedaniel")
+            }
+        }
+        maven(url = "https://maven.terraformersmc.com/releases/") {
+            content { includeGroup("com.terraformersmc") }
+        }
+    }
+
+    dependencies {
+        val mc = rootProject.property("minecraft_version") as String
+        val yarn = rootProject.property("yarn_mappings") as String
+        val jsr305 = rootProject.property("jsr305_version") as String
+
+        "minecraft"(group = "com.mojang", name = "minecraft", version = mc)
+        "mappings"("net.fabricmc:yarn:$yarn:v2")
+        "implementation"("com.google.code.findbugs:jsr305:$jsr305")
+    }
+}
+
+allprojects {
+    apply(plugin = "java")
+    apply(plugin = "architectury-plugin")
+    apply(plugin = "maven-publish")
+
+    version = "${rootProject.property("minecraft_version")}-${rootProject.property("mod_version")}"
+    group = rootProject.property("maven_group") as String
+
+    tasks.withType<JavaCompile>().configureEach {
+        options.encoding = "UTF-8"
+        options.release.set(17)
+    }
+}

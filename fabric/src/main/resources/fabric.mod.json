@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "id": "${id}",
+  "version": "${version}",
+  "name": "${name}",
+  "description": "${description}",
+  "authors": [
+    "NEDOSUG"
+  ],
+  "contact": {
+    "homepage": "${home_page}",
+    "sources": "${sources_page}",
+    "issues": "${issues_page}"
+  },
+  "license": "${license}",
+  "icon": "assets/endercompanion/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.nedosug.endercompanion.fabric.EnderCompanionFabric"
+    ],
+    "client": [
+      "com.nedosug.endercompanion.fabric.client.EnderCompanionClientFabric"
+    ],
+    "modmenu": [
+      "com.nedosug.endercompanion.fabric.client.config.ClothConfigIntegration"
+    ]
+  },
+  "mixins": [
+    "endercompanion.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "${minecraft_dependency}",
+    "java": ">=17",
+    "fabric-api": "*",
+    "architectury": ">=9.2.14",
+    "geckolib": ">=4.4.9",
+    "cloth-config": ">=11.1.118"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
