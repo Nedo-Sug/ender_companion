@@ -8,27 +8,50 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.UUID;
+
 public final class PlayerJoinHandler {
-    private static final String NBT_KEY_SPAWNED_COMPANION = "spawned_ender_companion";
     private static final int SPAWN_RADIUS = 3;
     private static final int MAX_SPAWN_ATTEMPTS = 16;
+    /** Tracks players who received a companion this server session. Prevents duplicate spawns. */
+    private static final Set<UUID> sessionSpawnedPlayers = new HashSet<>();
 
     private PlayerJoinHandler() {
     }
 
     public static void onPlayerJoin(ServerPlayer player) {
-        if (player.getPersistentData().getBoolean(NBT_KEY_SPAWNED_COMPANION)) {
+        UUID playerUUID = player.getUUID();
+
+        if (sessionSpawnedPlayers.contains(playerUUID)) {
             return;
         }
 
         ServerLevel level = player.serverLevel();
-        Vec3 playerPos = player.position();
 
+        // Check loaded entities in a generous radius — companion follows the player,
+        // so if one exists it will be nearby or reload when the player's chunks load.
+        AABB searchArea = player.getBoundingBox().inflate(200, 200, 200);
+        boolean alreadyHasCompanion = !level.getEntitiesOfClass(
+                EnderCompanionEntity.class, searchArea,
+                e -> playerUUID.equals(e.getOwnerUUID())
+        ).isEmpty();
+
+        if (alreadyHasCompanion) {
+            sessionSpawnedPlayers.add(playerUUID);
+            return;
+        }
+
+        Vec3 playerPos = player.position();
         BlockPos spawnPos = findSafeSpawnPosition(level, playerPos);
         if (spawnPos == null) {
-            EnderCompanionMod.LOGGER.warn("Failed to find safe spawn position for Ender Companion near player {}", player.getName().getString());
+            EnderCompanionMod.LOGGER.warn(
+                    "Failed to find safe spawn position for Ender Companion near player {}",
+                    player.getName().getString());
             return;
         }
 
@@ -39,10 +62,10 @@ public final class PlayerJoinHandler {
         }
 
         companion.setPos(spawnPos.getX() + 0.5D, spawnPos.getY(), spawnPos.getZ() + 0.5D);
-        companion.setOwnerUUID(player.getUUID());
+        companion.setOwnerUUID(playerUUID);
 
         if (level.addFreshEntity(companion)) {
-            player.getPersistentData().putBoolean(NBT_KEY_SPAWNED_COMPANION, true);
+            sessionSpawnedPlayers.add(playerUUID);
             EnderCompanionMod.LOGGER.info("Spawned Ender Companion for player {} at {}",
                     player.getName().getString(), spawnPos);
         } else {
