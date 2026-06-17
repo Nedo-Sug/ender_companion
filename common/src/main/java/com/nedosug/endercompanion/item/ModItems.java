@@ -6,6 +6,7 @@ import dev.architectury.registry.CreativeTabRegistry;
 import dev.architectury.registry.registries.DeferredRegister;
 import dev.architectury.registry.registries.RegistrySupplier;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.SpawnEggItem;
 
@@ -20,7 +21,6 @@ public final class ModItems {
                             0x161616,
                             0xCC00FA,
                             new Item.Properties()
-                                    .arch$tab(CreativeTabRegistry.getDefaultTab())
                     )
             );
 
@@ -29,5 +29,6 @@ public final class ModItems {
 
     public static void register() {
         ITEMS.register();
+        CreativeTabRegistry.append(CreativeModeTabs.SPAWN_EGGS, ENDER_COMPANION_SPAWN_EGG);
     }
 }
