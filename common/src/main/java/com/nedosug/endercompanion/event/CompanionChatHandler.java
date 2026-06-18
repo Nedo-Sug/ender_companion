@@ -42,14 +42,26 @@ public final class CompanionChatHandler {
         EnderCompanionMod.LOGGER.info("[EnderCompanion-Debug] Intercepted message from {}: {}",
                 sender.getName().getString(), text);
 
-        EnderCompanionEntity companion = findNearestOwnedCompanion(sender);
-        if (companion == null) {
-            // No companion owned by this player is nearby; nothing to do.
-            return;
-        }
+        // Guard everything after interception so any failure (lookup, scheduling inference)
+        // is logged with a full stack trace instead of being swallowed silently.
+        try {
+            EnderCompanionEntity companion = findNearestOwnedCompanion(sender);
+            if (companion == null) {
+                // No companion owned by this player is nearby; nothing to do.
+                EnderCompanionMod.LOGGER.info("[EnderCompanion-Debug] No owned companion in range of {}.",
+                        sender.getName().getString());
+                return;
+            }
 
-        EmbeddedAIHandler.askEnderGirl(companion, text,
-                response -> deliverResponse(sender, companion, response));
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-Debug] Routing message to companion at {} (friendship {}).",
+                    companion.blockPosition(), companion.getFriendshipLevel());
+
+            EmbeddedAIHandler.askEnderGirl(companion, text,
+                    response -> deliverResponse(sender, companion, response));
+        } catch (Throwable t) {
+            EnderCompanionMod.LOGGER.error("[EnderCompanion-Debug] Failed to handle chat message", t);
+            t.printStackTrace();
+        }
     }
 
     /**
@@ -97,6 +109,16 @@ public final class CompanionChatHandler {
                 .append("> ")
                 .append(Component.literal(response));
 
-        server.execute(() -> server.getPlayerList().broadcastSystemMessage(message, false));
+        // The AI callback runs on the inference thread; chat must be sent from the main
+        // server thread, so hop back onto it via MinecraftServer.execute().
+        server.execute(() -> {
+            try {
+                server.getPlayerList().broadcastSystemMessage(message, false);
+                EnderCompanionMod.LOGGER.info("[EnderCompanion-Debug] Delivered AI reply to chat: {}", response);
+            } catch (Throwable t) {
+                EnderCompanionMod.LOGGER.error("[EnderCompanion-Debug] Failed to broadcast AI reply", t);
+                t.printStackTrace();
+            }
+        });
     }
 }

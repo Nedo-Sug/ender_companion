@@ -103,30 +103,45 @@ public final class EmbeddedAIHandler {
                                      Consumer<String> callback) {
         // Check if downloading
         if (ModelDownloader.isDownloading()) {
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Model is still downloading, replying with fallback.");
             callback.accept(getLocalizedFallback("chat.endercompanion.ai.downloading"));
             return;
         }
 
         // Check if initializing
         if (isInitializing.get() && !isInitialized.get()) {
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Model is still initializing, replying with fallback.");
             callback.accept(getLocalizedFallback("chat.endercompanion.ai.initializing"));
             return;
         }
 
         // Check if failed to initialize
         if (!isInitialized.get()) {
+            EnderCompanionMod.LOGGER.warn("[EnderCompanion-AI] Model is not initialized, replying with fallback.");
             callback.accept(getLocalizedFallback("chat.endercompanion.ai.error_confused"));
             return;
         }
 
         // Perform inference in background
+        EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Scheduling inference for message: {}", playerMessage);
         CompletableFuture.runAsync(() -> {
             try {
+                EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Inference thread started.");
                 String response = generateResponse(companion, playerMessage);
+                EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Inference produced response: {}", response);
                 callback.accept(response);
-            } catch (Exception e) {
-                EnderCompanionMod.LOGGER.error("Error during AI inference", e);
-                callback.accept(getLocalizedFallback("chat.endercompanion.ai.error_words"));
+            } catch (Throwable t) {
+                // Catch Throwable (not just Exception) so native/linkage errors from the
+                // GGUF binding (e.g. UnsatisfiedLinkError) surface in the log instead of
+                // silently killing the inference thread.
+                EnderCompanionMod.LOGGER.error("[EnderCompanion-AI] Error during AI inference", t);
+                t.printStackTrace();
+                try {
+                    callback.accept(getLocalizedFallback("chat.endercompanion.ai.error_words"));
+                } catch (Throwable inner) {
+                    EnderCompanionMod.LOGGER.error("[EnderCompanion-AI] Failed to deliver fallback response", inner);
+                    inner.printStackTrace();
+                }
             }
         }, inferenceExecutor);
     }
@@ -167,6 +182,7 @@ public final class EmbeddedAIHandler {
     private static String generateResponse(com.nedosug.endercompanion.entity.EnderCompanionEntity companion,
                                            String userMessage) {
         if (model == null) {
+            EnderCompanionMod.LOGGER.warn("[EnderCompanion-AI] generateResponse called but model is null.");
             return getLocalizedFallback("chat.endercompanion.ai.error_confused");
         }
 
@@ -177,41 +193,57 @@ public final class EmbeddedAIHandler {
             // Get current friendship level
             int friendshipLevel = companion.getFriendshipLevel();
 
-            // Build context string with friendship
-            StringBuilder contextBuilder = new StringBuilder();
-            contextBuilder.append(String.format("[Текущий уровень дружбы с игроком: %d из 100]", friendshipLevel));
-
-            // Add backpack context if equipped
+            // Build the system message: persona prompt + live context (friendship, backpack).
+            StringBuilder systemBuilder = new StringBuilder();
+            systemBuilder.append(systemPrompt);
+            systemBuilder.append(String.format("\n[Текущий уровень дружбы с игроком: %d из 100]", friendshipLevel));
             if (companion.hasBackpack()) {
-                contextBuilder.append("\n[На твоей спине надет походный рюкзак игрока. Ты рада помогать ему нести вещи]");
+                systemBuilder.append("\n[На твоей спине надет походный рюкзак игрока. Ты рада помогать ему нести вещи]");
             }
 
-            // Build full prompt
-            String fullPrompt = String.format("%s\n%s\n\nUser: %s\nAssistant:",
-                    contextBuilder.toString(), systemPrompt, userMessage);
+            // Build the prompt strictly in ChatML, which is what Qwen 2.5 is trained on.
+            // Anything else makes the model ramble or emit nothing useful.
+            //   <|im_start|>system\n...<|im_end|>\n
+            //   <|im_start|>user\n...<|im_end|>\n
+            //   <|im_start|>assistant\n
+            String fullPrompt = "<|im_start|>system\n" + systemBuilder + "<|im_end|>\n"
+                    + "<|im_start|>user\n" + userMessage + "<|im_end|>\n"
+                    + "<|im_start|>assistant\n";
+
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Built ChatML prompt:\n{}", fullPrompt);
 
             InferenceParameters inferParams = new InferenceParameters(fullPrompt)
                     .setTemperature(TEMPERATURE)
                     .setNPredict(MAX_TOKENS)
-                    .setStopStrings("\n", "User:");
+                    // Stop on the ChatML turn delimiters so we cut off cleanly after the reply.
+                    .setStopStrings("<|im_end|>", "<|im_start|>");
 
             // Generate response (blocking call, but we're in a separate thread)
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Starting token generation...");
             StringBuilder response = new StringBuilder();
             for (LlamaOutput output : model.generate(inferParams)) {
                 response.append(output.text);
             }
+            EnderCompanionMod.LOGGER.info("[EnderCompanion-AI] Token generation finished.");
 
-            String result = response.toString().trim();
+            // Strip any trailing ChatML markers that slipped through before the stop string.
+            String result = response.toString()
+                    .replace("<|im_end|>", "")
+                    .replace("<|im_start|>", "")
+                    .trim();
 
             // Fallback if empty response
             if (result.isEmpty()) {
+                EnderCompanionMod.LOGGER.warn("[EnderCompanion-AI] Model produced an empty response.");
                 return getLocalizedFallback("chat.endercompanion.ai.empty_response");
             }
 
             return result;
 
-        } catch (Exception e) {
-            EnderCompanionMod.LOGGER.error("Error generating AI response", e);
+        } catch (Throwable t) {
+            // Catch Throwable so native binding failures are logged with a full stack trace.
+            EnderCompanionMod.LOGGER.error("[EnderCompanion-AI] Error generating AI response", t);
+            t.printStackTrace();
             return getLocalizedFallback("chat.endercompanion.ai.distracted");
         }
     }

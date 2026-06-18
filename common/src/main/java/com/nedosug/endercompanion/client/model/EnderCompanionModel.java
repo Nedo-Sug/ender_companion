@@ -25,8 +25,8 @@ import net.minecraft.util.Mth;
  * <ul>
  *   <li>head     pivot: (0, 0, 0)   — neck base, head hangs -8..0 above</li>
  *   <li>body     pivot: (0, 0, 0)   — torso top, body extends 0..12 downward</li>
- *   <li>right_arm pivot: (-5, 2, 0) — right shoulder (entity's right = -x)</li>
- *   <li>left_arm  pivot: (5, 2, 0)  — left shoulder (entity's left  = +x)</li>
+ *   <li>right_arm pivot: (-4, 2, 0) — right shoulder (entity's right = -x), flush with torso</li>
+ *   <li>left_arm  pivot: (4, 2, 0)  — left shoulder (entity's left  = +x), flush with torso</li>
  *   <li>right_leg pivot: (-1.9, 12, 0) — right hip</li>
  *   <li>left_leg  pivot: (1.9, 12, 0)  — left hip</li>
  * </ul>
@@ -113,26 +113,42 @@ public class EnderCompanionModel<T extends EnderCompanionEntity> extends EntityM
                                 new CubeDeformation(0.0F)),
                 PartPose.ZERO);
 
+        // Chest decoration — child of body so it moves with the torso.
+        // Front of the model is -Z (the body's front face is at z=-2), so the cube is
+        // pushed forward to z=-3..-1, leaving it protruding ~1 unit beyond the torso
+        // instead of being buried inside it. Sits on the upper chest (y=2..5).
+        // UV reuses part of the torso region; tweak texOffs in Blockbench for a cleaner skin.
+        body.addOrReplaceChild("chest",
+                CubeListBuilder.create()
+                        .texOffs(16, 20)
+                        .addBox(-3.0F, 2.0F, -3.0F, 6.0F, 3.0F, 2.0F,
+                                new CubeDeformation(0.0F)),
+                PartPose.ZERO);
+
         // ── RIGHT ARM ────────────────────────────────────────────────────
-        // Pivot at right shoulder: (-5, 2, 0). Slim arm 3×11×4.
-        // Cube starts at -1 above pivot (-2 for 1px shoulder cap), extends 11 down.
+        // Pivot at right shoulder: (-4, 2, 0). Slim arm 3×11×4.
+        // Pivot moved 1 unit inward (was -5) so the arm sits flush against the
+        // torso edge (x=-4) instead of leaving a 1-unit gap. The pivot now lines
+        // up with the body's shoulder edge.
         // UV: texOffs(16, 36) from Blockbench.
         root.addOrReplaceChild("right_arm",
                 CubeListBuilder.create()
                         .texOffs(16, 36)
                         .addBox(-3.0F, -2.0F, -2.0F, 3.0F, 11.0F, 4.0F,
                                 new CubeDeformation(0.0F)),
-                PartPose.offset(-5.0F, 2.0F, 0.0F));
+                PartPose.offset(-4.0F, 2.0F, 0.0F));
 
         // ── LEFT ARM ─────────────────────────────────────────────────────
-        // Pivot at left shoulder: (5, 2, 0). Mirrored slim arm.
+        // Pivot at left shoulder: (4, 2, 0). Mirrored slim arm.
+        // Pivot moved 1 unit inward (was 5) to match the right arm and sit flush
+        // against the torso edge (x=4).
         // UV: texOffs(32, 0) from Blockbench.
         root.addOrReplaceChild("left_arm",
                 CubeListBuilder.create()
                         .texOffs(32, 0)
                         .addBox(0.0F, -2.0F, -2.0F, 3.0F, 11.0F, 4.0F,
                                 new CubeDeformation(0.0F)),
-                PartPose.offset(5.0F, 2.0F, 0.0F));
+                PartPose.offset(4.0F, 2.0F, 0.0F));
 
         // ── RIGHT LEG ────────────────────────────────────────────────────
         // Pivot at right hip: (-1.9, 12, 0). Long leg 4×16×4.
