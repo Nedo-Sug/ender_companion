@@ -1,5 +1,6 @@
 package com.nedosug.endercompanion.entity;
 
+import com.nedosug.endercompanion.EnderCompanionMod;
 import com.nedosug.endercompanion.entity.ai.FollowPlayerGoal;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.nbt.CompoundTag;
@@ -131,10 +132,19 @@ public class EnderCompanionEntity extends PathfinderMob {
     }
 
     public void setFriendshipLevel(int level) {
-        this.friendshipLevel = Math.max(MIN_FRIENDSHIP, Math.min(MAX_FRIENDSHIP, level));
+        int clamped = Math.max(MIN_FRIENDSHIP, Math.min(MAX_FRIENDSHIP, level));
+        if (clamped != this.friendshipLevel) {
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] Отношения изменены: {} -> {} (из {})",
+                    this.friendshipLevel, clamped, level);
+        }
+        this.friendshipLevel = clamped;
     }
 
     public void modifyFriendship(int amount) {
+        EnderCompanionMod.LOGGER.info(
+                "[EnderCompanion-Mechanics] modifyFriendship({}) вызван. Текущие отношения: {}",
+                amount, this.friendshipLevel);
         this.setFriendshipLevel(this.friendshipLevel + amount);
     }
 
@@ -144,12 +154,19 @@ public class EnderCompanionEntity extends PathfinderMob {
 
     public void tryDropGift() {
         if (!this.isHighFriendshipUnlocked()) {
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] tryDropGift: уровень дружбы {} ниже порога {} — подарок не выпадает.",
+                    this.friendshipLevel, HIGH_FRIENDSHIP_THRESHOLD);
             return;
         }
 
         if (this.random.nextFloat() >= 0.10f) {
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] tryDropGift: бросок не прошёл (шанс 10%) — подарка нет.");
             return;
         }
+
+        EnderCompanionMod.LOGGER.info("[EnderCompanion-Mechanics] tryDropGift: бросок прошёл — выдаём подарок!");
 
         ItemStack giftStack;
 
@@ -190,9 +207,23 @@ public class EnderCompanionEntity extends PathfinderMob {
 
     @Override
     public boolean hurt(DamageSource source, float amount) {
+        String attackerName = source.getEntity() != null
+                ? source.getEntity().getName().getString()
+                : "<нет источника>";
+        EnderCompanionMod.LOGGER.info(
+                "[EnderCompanion-Mechanics] Сущность получила урон от: {} (урон: {})", attackerName, amount);
+
         if (source.getEntity() instanceof Player player && player.getUUID().equals(this.ownerUUID)) {
+            int before = this.friendshipLevel;
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] Ударил владелец. Текущие отношения ДО удара: {}", before);
             this.modifyFriendship(-10);
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] Отношения УМЕНЬШИЛИСЬ на 10. Стало: {}", this.friendshipLevel);
             this.playSound(SoundEvents.ENDERMAN_SCREAM, 0.5F, 1.2F);
+        } else {
+            EnderCompanionMod.LOGGER.info(
+                    "[EnderCompanion-Mechanics] Атакующий не является владельцем — отношения не меняются.");
         }
         return super.hurt(source, amount);
     }
@@ -200,6 +231,10 @@ public class EnderCompanionEntity extends PathfinderMob {
     @Override
     public InteractionResult mobInteract(Player player, InteractionHand hand) {
         ItemStack itemStack = player.getItemInHand(hand);
+
+        EnderCompanionMod.LOGGER.info(
+                "[EnderCompanion-Mechanics] Взаимодействие от {} рукой {} с предметом {} (сторона: {})",
+                player.getName().getString(), hand, itemStack, this.level().isClientSide ? "клиент" : "сервер");
 
         if (dev.architectury.platform.Platform.isModLoaded("travelersbackpack")) {
             if (!this.hasBackpack() && isTravelersBackpack(itemStack)) {
@@ -269,12 +304,19 @@ public class EnderCompanionEntity extends PathfinderMob {
             isValidGift = true;
         }
 
+        EnderCompanionMod.LOGGER.info(
+                "[EnderCompanion-Mechanics] Проверка подарка: предмет={}, подходит={}, прибавка к отношениям={}",
+                itemStack.getItem(), isValidGift, friendshipGain);
+
         if (isValidGift) {
             if (!this.level().isClientSide) {
                 if (!player.getAbilities().instabuild) {
                     itemStack.shrink(1);
                 }
 
+                EnderCompanionMod.LOGGER.info(
+                        "[EnderCompanion-Mechanics] Принят подарок {} от {}. Отношения ДО: {}",
+                        itemStack.getItem(), player.getName().getString(), this.friendshipLevel);
                 this.modifyFriendship(friendshipGain);
 
                 if (this.level() instanceof ServerLevel serverLevel) {
